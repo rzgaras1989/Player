@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Player Division</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root { --black-color: #1e272e; --yellow-color: #fbc531; --sky-blue: #e3f2fd; }
+        body { font-family: 'Tahoma', sans-serif; background: #f5f6fa; padding: 5px; margin: 0; direction: rtl; }
+        
+        .no-export { background: white; padding: 6px; border-radius: 8px; margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .input-group { display: flex; gap: 4px; margin-bottom: 6px; }
+        input { padding: 6px; border: 1px solid #ddd; border-radius: 4px; flex: 1; font-size: 14px; font-weight: bold; outline: none; }
+        .add-btn { background: #00b894; color: white; border: none; padding: 0 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        
+        #pool { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; 
+            background: #f1f2f6; padding: 5px; border-radius: 6px; 
+        }
+        .tag { 
+            background: white; padding: 6px 2px; border-radius: 3px; font-size: 10px; 
+            font-weight: bold; border: 1px solid #ccc; text-align: center; 
+            cursor: grab; touch-action: none; overflow: hidden;
+        }
+
+        #export-area { padding: 8px 4px; background: #ffffff; border-radius: 8px; }
+        .row { display: flex; gap: 1px; width: 100%; align-items: stretch; }
+        .box { flex: 1; padding: 4px; border-radius: 4px; display: flex; flex-direction: column; }
+        
+        .box-black { background-color: var(--black-color); color: white; }
+        .box-yellow { background-color: var(--yellow-color); color: black; }
+
+        .slot-container { min-height: 150px; flex-grow: 1; }
+        
+        /* خانەی ناوەکان بە شینی ئاسمانی و باریکتر */
+        .filled-tag { 
+            background: var(--sky-blue); margin: 3px auto; padding: 6px; 
+            border-radius: 4px; display: flex; justify-content: center; align-items: center;
+            font-size: 14px; font-weight: 900; color: #1565c0; text-align: center;
+            height: 18px; border: 1px solid #bbdefb; width: 90%;
+        }
+
+        .shot-btn { background: #6c5ce7; color: white; width: 98%; margin: 10px auto; display: block; font-size: 15px; height: 40px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+        h2, h4 { text-align: center; margin: 3px 0; font-weight: 900; }
+        h4 { font-size: 14px; padding-bottom: 3px; }
+        h2 { font-size: 16px; color: #2d3436; }
+    </style>
+</head>
+<body>
+
+<div class="no-export">
+    <div class="input-group">
+        <input type="text" id="pName" placeholder="ناوی نوێ...">
+        <button class="add-btn" onclick="addNewPlayer()">+</button>
+    </div>
+    <div id="pool"></div>
+</div>
+
+<div id="export-area">
+    <h2>Player Division</h2>
+    <div class="row">
+        <div class="box box-black">
+            <h4>تیپی ڕەش</h4>
+            <div id="listB" class="slot-container"></div>
+        </div>
+        <div class="box box-yellow">
+            <h4>تیپی زەرد</h4>
+            <div id="listY" class="slot-container"></div>
+        </div>
+    </div>
+</div>
+
+<button class="shot-btn" onclick="takeShot()">📷 وێنەگرتن و پاشەکەوتکردن</button>
+
+<script>
+    const initialNames = [
+        "هیلال", "ڕێکەوت", "کاکەخان", "م.جلال", "کاک جبار", "کاک بێستون", 
+        "م.وریا", "عومەر", "م.بینەر", "م.سۆران", "م.شێرکۆ", "م.سیروان", 
+        "قانع", "کاک بێباک", "هێرش", "و.بەهێز", "ئومێد", "م.ئارام", 
+        "سیروان کافۆ", "م.ڕزگار", "شێخ غازی"
+    ];
+
+    const poolEl = document.getElementById('pool');
+    const listB = document.getElementById('listB');
+    const listY = document.getElementById('listY');
+
+    function init() {
+        initialNames.forEach(name => createTag(name, poolEl));
+        
+        const sortOptions = {
+            group: 'players',
+            animation: 150,
+            onAdd: function (evt) {
+                updateItemStyle(evt.item, evt.to !== poolEl);
+            }
+        };
+
+        Sortable.create(poolEl, sortOptions);
+        Sortable.create(listB, sortOptions);
+        Sortable.create(listY, sortOptions);
+    }
+
+    function createTag(name, container) {
+        const div = document.createElement('div');
+        div.className = 'tag';
+        div.setAttribute('data-name', name);
+        div.innerHTML = name;
+        container.appendChild(div);
+    }
+
+    function updateItemStyle(item, isInsideTeam) {
+        const name = item.getAttribute('data-name');
+        if (isInsideTeam) {
+            item.className = 'filled-tag';
+            item.innerHTML = name;
+            item.onclick = function() {
+                item.remove();
+                createTag(name, poolEl);
+            };
+        } else {
+            item.className = 'tag';
+            item.innerHTML = name;
+            item.onclick = null;
+        }
+    }
+
+    function addNewPlayer() {
+        const input = document.getElementById('pName');
+        if(input.value.trim()) {
+            createTag(input.value.trim(), poolEl);
+            input.value = "";
+        }
+    }
+
+    function takeShot() {
+        const area = document.getElementById('export-area');
+        html2canvas(area, { 
+            scale: 3, 
+            useCORS: true,
+            backgroundColor: "#ffffff"
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL("image/png");
+            link.download = 'Player-Division.png';
+            link.click();
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
