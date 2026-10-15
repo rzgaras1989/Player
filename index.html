@@ -7,25 +7,41 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --black-color: #1e272e; --yellow-color: #fbc531; --sky-blue: #e3f2fd; }
-        body { font-family: 'Tahoma', sans-serif; background: #f5f6fa; padding: 5px; margin: 0; direction: rtl; }
+        :root {
+            --black-color: #1e272e; --yellow-color: #fbc531;
+            --bg: #f5f6fa; --panel: #ffffff; --pool-bg: #f1f2f6;
+            --text: #2d3436; --border: #dddddd; --tag-bg: #ffffff; --tag-border: #cccccc;
+            --chip-bg: #e3f2fd; --chip-text: #1565c0; --chip-border: #bbdefb;
+            --shadow: rgba(0,0,0,0.1);
+            color-scheme: light;
+        }
+        :root[data-theme="dark"] {
+            --black-color: #0b0f12; --yellow-color: #e1b12c;
+            --bg: #121417; --panel: #1e2126; --pool-bg: #262a30;
+            --text: #ecf0f1; --border: #3a3f47; --tag-bg: #2f343b; --tag-border: #454b54;
+            --chip-bg: #1c3550; --chip-text: #90caf9; --chip-border: #2d4f73;
+            --shadow: rgba(0,0,0,0.5);
+            color-scheme: dark;
+        }
+        body { font-family: 'Tahoma', sans-serif; background: var(--bg); color: var(--text); padding: 5px; margin: 0; direction: rtl; transition: background .2s, color .2s; }
         
-        .no-export { background: white; padding: 6px; border-radius: 8px; margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .no-export { background: var(--panel); padding: 6px; border-radius: 8px; margin-bottom: 5px; box-shadow: 0 1px 3px var(--shadow); }
         .input-group { display: flex; gap: 4px; margin-bottom: 6px; }
-        input { padding: 6px; border: 1px solid #ddd; border-radius: 4px; flex: 1; font-size: 14px; font-weight: bold; outline: none; }
+        input { padding: 6px; border: 1px solid var(--border); border-radius: 4px; flex: 1; font-size: 14px; font-weight: bold; outline: none; background: var(--tag-bg); color: var(--text); }
         .add-btn { background: #00b894; color: white; border: none; padding: 0 12px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .theme-btn { background: var(--pool-bg); color: var(--text); border: 1px solid var(--border); padding: 0 10px; border-radius: 4px; font-size: 16px; cursor: pointer; }
         
         #pool { 
             display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; 
-            background: #f1f2f6; padding: 5px; border-radius: 6px; 
+            background: var(--pool-bg); padding: 5px; border-radius: 6px; 
         }
         .tag { 
-            background: white; padding: 6px 2px; border-radius: 3px; font-size: 10px; 
-            font-weight: bold; border: 1px solid #ccc; text-align: center; 
+            background: var(--tag-bg); color: var(--text); padding: 6px 2px; border-radius: 3px; font-size: 10px; 
+            font-weight: bold; border: 1px solid var(--tag-border); text-align: center; 
             cursor: grab; touch-action: none; overflow: hidden;
         }
 
-        #export-area { padding: 8px 4px; background: #ffffff; border-radius: 8px; }
+        #export-area { padding: 8px 4px; background: var(--panel); border-radius: 8px; }
         .row { display: flex; gap: 1px; width: 100%; align-items: stretch; }
         .box { flex: 1; padding: 4px; border-radius: 4px; display: flex; flex-direction: column; }
         
@@ -36,17 +52,17 @@
         
         /* خانەی ناوەکان بە شینی ئاسمانی و باریکتر */
         .filled-tag { 
-            background: var(--sky-blue); margin: 3px auto; padding: 6px; 
+            background: var(--chip-bg); margin: 3px auto; padding: 6px; 
             border-radius: 4px; display: flex; justify-content: center; align-items: center;
-            font-size: 14px; font-weight: 900; color: #1565c0; text-align: center;
-            height: 18px; border: 1px solid #bbdefb; width: 90%;
+            font-size: 14px; font-weight: 900; color: var(--chip-text); text-align: center;
+            height: 18px; border: 1px solid var(--chip-border); width: 90%;
         }
 
         .shot-btn { background: #6c5ce7; color: white; width: 98%; margin: 10px auto; display: block; font-size: 15px; height: 40px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 
         h2, h4 { text-align: center; margin: 3px 0; font-weight: 900; }
         h4 { font-size: 14px; padding-bottom: 3px; }
-        h2 { font-size: 16px; color: #2d3436; }
+        h2 { font-size: 16px; color: var(--text); }
     </style>
 </head>
 <body>
@@ -55,6 +71,7 @@
     <div class="input-group">
         <input type="text" id="pName" placeholder="ناوی نوێ...">
         <button class="add-btn" onclick="addNewPlayer()">+</button>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Light / Dark">🌙</button>
     </div>
     <div id="pool"></div>
 </div>
@@ -139,7 +156,7 @@
         html2canvas(area, { 
             scale: 3, 
             useCORS: true,
-            backgroundColor: "#ffffff"
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--panel').trim()
         }).then(canvas => {
             const link = document.createElement('a');
             link.href = canvas.toDataURL("image/png");
@@ -147,6 +164,21 @@
             link.click();
         });
     }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+
+    function toggleTheme() {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        try { localStorage.setItem('theme', next); } catch (e) {}
+    }
+
+    let savedTheme = null;
+    try { savedTheme = localStorage.getItem('theme'); } catch (e) {}
+    applyTheme(savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 
     init();
 </script>
